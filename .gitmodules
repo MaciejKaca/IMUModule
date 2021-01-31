@@ -1,0 +1,6 @@
+[submodule "MPU9250"]
+	path = MPU9250
+	url = https://github.com/hideakitai/MPU9250.git
+[submodule "CarInterface"]
+	path = CarInterface
+	url = https://github.com/MaciejKaca/CarInterface.git
