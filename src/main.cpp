@@ -1,10 +1,15 @@
 #include <Arduino.h>
-#include 
+#include <../include/IMU.h> 
 
-void setup() {
-  // put your setup code here, to run once:
+IMU imu;
+
+void setup()
+{
+  Serial.begin(9600);
+  imu.receiveInitialMessage();
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
+void loop()
+{
+  imu.updateIMUandSend();
 }
