@@ -110,7 +110,7 @@ void IMU::receiveInitialMessage()
 template<class Signal>
 void IMU::sendSignal(Signal sig, U8 size)
 {
-    Serial.write((U8*)sig, size);
+    Serial.write((U8*)&sig, size);
 }
 
 void IMU::updateIMUandSend()
