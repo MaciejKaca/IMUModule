@@ -27,4 +27,5 @@ class IMU
     bool isConfigurationValid(ConfigurationReq* configurationReq);
     void calibrateImu();
     const U8 REFRESH_TIME = 25; //milliseconds
+    const U8 DELAY_BEFORE_CALIBRATION = 5000; //5sec
 };

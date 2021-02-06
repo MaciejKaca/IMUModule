@@ -35,12 +35,6 @@ bool IMU::isConfigurationValid(ConfigurationReq* configurationReq)
     }
 }
 
-void IMU::calibrateImu()
-{
-    mpu.calibrateAccelGyro();
-    mpu.calibrateMag();
-}
-
 void IMU::receiveInitialMessage()
 {
     bool isReady = false;
@@ -79,7 +73,8 @@ void IMU::receiveInitialMessage()
             case CALIBRATION_REQ:
             {
                 CalibrationReq* calibrationReq = reinterpret_cast<CalibrationReq*>(sig);
-                CalibrationCfm calibrationCfm;
+                static CalibrationCfm calibrationCfm;
+                static U8 noOfEntry = 0;
 
                 if(mpu.setup(MPU_ADDRESS, calibrationReq->mpuSettings, Wire))
                 {
@@ -89,11 +84,21 @@ void IMU::receiveInitialMessage()
                 {
                     calibrationCfm.isValid = false;
                     sendSignal(calibrationCfm, sizeof(CalibrationCfm));
+                    noOfEntry = 0;
                     break;
                 }
-                
 
-                calibrateImu();
+                noOfEntry++;
+                delay(DELAY_BEFORE_CALIBRATION);
+                if(noOfEntry%2)
+                {
+                    mpu.calibrateMag();
+                }
+                else
+                {
+                    mpu.calibrateAccelGyro();
+                }
+
                 calibrationCfm.isValid = true;;
                 sendSignal(calibrationCfm, sizeof(CalibrationCfm));
                 isReady = true;
