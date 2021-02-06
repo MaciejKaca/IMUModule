@@ -58,8 +58,6 @@ void IMU::receiveInitialMessage()
                 ConfigurationCfm configurationCfm;
 
                 configurationCfm.isValid = isConfigurationValid(configurationReq);
-
-                delete configurationReq;
                 sendSignal(configurationCfm, sizeof(ConfigurationCfm));
 
                 if(configurationCfm.isValid)
@@ -93,21 +91,22 @@ void IMU::receiveInitialMessage()
                 if(noOfEntry%2)
                 {
                     mpu.calibrateMag();
+                    isReady = true;
                 }
                 else
                 {
                     mpu.calibrateAccelGyro();
                 }
 
-                calibrationCfm.isValid = true;;
+                calibrationCfm.isValid = true;
                 sendSignal(calibrationCfm, sizeof(CalibrationCfm));
-                isReady = true;
                 break;
             }
 
             default:
                 break;
             }
+            delete[] sig;
         }
     }
 }
