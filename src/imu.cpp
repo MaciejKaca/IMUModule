@@ -52,59 +52,81 @@ void IMU::receiveInitialMessage()
 
             switch(signalID)
             {
-            case CONFIGURATION_REQ:
-            {
-                ConfigurationReq* configurationReq = reinterpret_cast<ConfigurationReq*>(sig);
-                ConfigurationCfm configurationCfm;
-
-                configurationCfm.isValid = isConfigurationValid(configurationReq);
-                sendSignal(configurationCfm, sizeof(ConfigurationCfm));
-
-                if(configurationCfm.isValid)
+                case CONFIGURATION_REQ:
                 {
-                    isReady = true;
-                }
+                    ConfigurationReq* configurationReq = reinterpret_cast<ConfigurationReq*>(sig);
+                    ConfigurationCfm configurationCfm;
 
-                break;
-            }
+                    configurationCfm.isValid = isConfigurationValid(configurationReq);
+                    sendSignal(configurationCfm, sizeof(ConfigurationCfm));
 
-            case CALIBRATION_REQ:
-            {
-                CalibrationReq* calibrationReq = reinterpret_cast<CalibrationReq*>(sig);
-                static CalibrationCfm calibrationCfm;
-                static U8 noOfEntry = 0;
+                    if(configurationCfm.isValid)
+                    {
+                        isReady = true;
+                    }
 
-                if(mpu.setup(MPU_ADDRESS, calibrationReq->mpuSettings, Wire))
-                {
-                    mpu.setMagneticDeclination(calibrationReq->magneticDelication);
-                }
-                else
-                {
-                    calibrationCfm.isValid = false;
-                    sendSignal(calibrationCfm, sizeof(CalibrationCfm));
-                    noOfEntry = 0;
                     break;
                 }
 
-                noOfEntry++;
-                delay(DELAY_BEFORE_CALIBRATION);
-                if(noOfEntry%2)
+                case CALIBRATION_REQ:
                 {
-                    mpu.calibrateMag();
-                    isReady = true;
-                }
-                else
-                {
-                    mpu.calibrateAccelGyro();
+                    CalibrationReq* calibrationReq = reinterpret_cast<CalibrationReq*>(sig);
+                    CalibrationCfm* calibrationCfm = (CalibrationCfm*) calloc(1, sizeof(CalibrationCfm));
+                    static U8 noOfEntry = 0;
+                    calibrationCfm->isValid = true;
+
+                    if(noOfEntry == 0)
+                    {
+                        if(mpu.setup(MPU_ADDRESS, calibrationReq->mpuSettings, Wire))
+                        {
+                            mpu.setMagneticDeclination(calibrationReq->magneticDelication);
+                            calibrationCfm->isValid = true;
+                        }
+                        else
+                        {
+                            calibrationCfm->isValid = false;
+                        }
+                    }
+
+                    if(calibrationCfm->isValid)
+                    {
+                        noOfEntry++;
+                        delay(DELAY_BEFORE_CALIBRATION);
+
+                        if(noOfEntry == 1)
+                        {
+                            mpu.calibrateAccelGyro();
+                        }
+                        else if(noOfEntry == 2)
+                        {
+                            mpu.calibrateMag();
+
+                            calibrationCfm->accelrBias.x = mpu.getAccBiasX();
+                            calibrationCfm->accelrBias.y = mpu.getAccBiasY();
+                            calibrationCfm->accelrBias.z = mpu.getAccBiasZ();
+
+                            calibrationCfm->gyroBias.x = mpu.getGyroBiasX();
+                            calibrationCfm->gyroBias.y = mpu.getGyroBiasY();
+                            calibrationCfm->gyroBias.z = mpu.getGyroBiasZ();
+
+                            calibrationCfm->magBias.x = mpu.getMagBiasX();
+                            calibrationCfm->magBias.y = mpu.getMagBiasY();
+                            calibrationCfm->magBias.z = mpu.getMagBiasZ();
+
+                            calibrationCfm->magScale.x = mpu.getMagScaleX();
+                            calibrationCfm->magScale.y = mpu.getMagScaleY();
+                            calibrationCfm->magScale.z = mpu.getMagScaleZ();
+
+                            isReady = true;
+                        }
+                    }
+                    sendSignal(calibrationCfm, sizeof(CalibrationCfm));
+                    free(calibrationCfm);
+                    break;
                 }
 
-                calibrationCfm.isValid = true;
-                sendSignal(calibrationCfm, sizeof(CalibrationCfm));
-                break;
-            }
-
-            default:
-                break;
+                default:
+                    break;
             }
             delete[] sig;
         }
